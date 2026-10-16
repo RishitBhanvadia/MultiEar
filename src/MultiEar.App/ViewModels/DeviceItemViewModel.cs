@@ -105,6 +105,36 @@ namespace MultiEar_App.ViewModels
             _ => new SolidColorBrush(Colors.Gray)
         };
 
+        private bool _isExpanded;
+
+        public bool IsExpanded
+        {
+            get => _isExpanded;
+            set
+            {
+                if (_isExpanded != value)
+                {
+                    _isExpanded = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(ExpandButtonText));
+                    OnPropertyChanged(nameof(ExpandButtonGlyph));
+                }
+            }
+        }
+
+        public string ExpandButtonText => IsExpanded ? "Hide Tune" : "Tune";
+        public string ExpandButtonGlyph => IsExpanded ? "\uE70E" : "\uE70D";
+
+        public void ToggleExpand()
+        {
+            IsExpanded = !IsExpanded;
+        }
+
+        public void ResetTrim()
+        {
+            ManualTrimMs = 0;
+        }
+
         public DeviceItemViewModel(DevicePipeline pipeline, AudioEngineService engine)
         {
             _pipeline = pipeline;

@@ -75,6 +75,15 @@ namespace MultiEar_App.ViewModels
         public bool HasDevices => Devices.Count > 0;
         public bool HasNoDevices => Devices.Count == 0;
 
+        public string ActiveDevicesCountText => Devices.Count switch
+        {
+            0 => "No Earphones",
+            1 => "1 Earphone Active",
+            _ => $"{Devices.Count} Earphones Active"
+        };
+
+        public bool IsStreamingActive => _engine.IsCapturing;
+
         public MainViewModel(DispatcherQueue dispatcher)
         {
             _dispatcher = dispatcher;
@@ -137,6 +146,7 @@ namespace MultiEar_App.ViewModels
 
             OnPropertyChanged(nameof(HasDevices));
             OnPropertyChanged(nameof(HasNoDevices));
+            OnPropertyChanged(nameof(ActiveDevicesCountText));
             RefreshAvailableDevices();
         }
 

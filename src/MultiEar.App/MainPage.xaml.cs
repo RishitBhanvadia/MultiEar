@@ -27,11 +27,21 @@ namespace MultiEar_App
             ViewModel.DismissWarning();
         }
 
-        private void OnRemoveDeviceClick(object sender, RoutedEventArgs e)
+        private async void OnOpenAddEarphoneDialogClick(object sender, RoutedEventArgs e)
         {
-            if (sender is FrameworkElement elem && elem.DataContext is DeviceItemViewModel item)
+            ViewModel.RefreshAvailableDevices();
+            if (Content?.XamlRoot != null)
             {
-                ViewModel.RemoveDevice(item);
+                DevicePickerDialog.XamlRoot = Content.XamlRoot;
+            }
+
+            try
+            {
+                await DevicePickerDialog.ShowAsync();
+            }
+            catch
+            {
+                // Ignore if dialog already open
             }
         }
 
@@ -40,6 +50,30 @@ namespace MultiEar_App
             if (sender is FrameworkElement elem && elem.DataContext is MMDevice dev)
             {
                 ViewModel.AddDevice(dev);
+            }
+        }
+
+        private void OnRemoveDeviceClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement elem && elem.DataContext is DeviceItemViewModel item)
+            {
+                ViewModel.RemoveDevice(item);
+            }
+        }
+
+        private void OnToggleTuneExpandClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement elem && elem.DataContext is DeviceItemViewModel item)
+            {
+                item.ToggleExpand();
+            }
+        }
+
+        private void OnResetTrimClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement elem && elem.DataContext is DeviceItemViewModel item)
+            {
+                item.ResetTrim();
             }
         }
     }
