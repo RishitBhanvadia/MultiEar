@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="MultiEar_App.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:MultiEar_App"
+    xmlns:vm="using:MultiEar_App.ViewModels"
+    xmlns:naudio="using:NAudio.CoreAudioApi"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Padding="16,8,16,16" RowSpacing="12">
+        <Grid.RowDefinitions>
+            <!-- Header -->
+            <RowDefinition Height="Auto" />
+            <!-- System / Feedback Banner -->
+            <RowDefinition Height="Auto" />
+            <!-- Content List / Empty state -->
+            <RowDefinition Height="*" />
+            <!-- Footer Controls -->
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <FontIcon Glyph="&#xE7F6;" FontSize="22" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                <StackPanel>
+                    <TextBlock Text="MultiEar" FontWeight="SemiBold" FontSize="18" />
+                    <TextBlock Text="{x:Bind ViewModel.DefaultDeviceName, Mode=OneWay}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxWidth="210" />
+                </StackPanel>
+            </StackPanel>
+
+            <Button Grid.Column="1" Click="OnToggleMuteClick" VerticalAlignment="Center" Padding="8,4">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <FontIcon Glyph="{x:Bind ViewModel.MuteButtonIcon, Mode=OneWay}" FontSize="13" />
+                    <TextBlock Text="{x:Bind ViewModel.MuteButtonText, Mode=OneWay}" FontSize="12" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- Feedback & Advisory InfoBar -->
+        <InfoBar Grid.Row="1"
+                 IsOpen="{x:Bind ViewModel.HasFeedbackWarning, Mode=OneWay}"
+                 Severity="Warning"
+                 Title="Audio Advisory"
+                 Message="{x:Bind ViewModel.FeedbackWarning, Mode=OneWay}"
+                 CloseButtonClick="OnDismissWarningClick" />
+
+        <!-- Main Device List or Empty State -->
+        <Grid Grid.Row="2">
+            <!-- Empty State -->
+            <StackPanel Visibility="{x:Bind ViewModel.HasNoDevices, Mode=OneWay}"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Spacing="12"
+                        Padding="16">
+                <FontIcon Glyph="&#xE7F6;" FontSize="44" Foreground="{ThemeResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center" />
+                <TextBlock Text="No Earphones Connected" FontWeight="SemiBold" FontSize="15" HorizontalAlignment="Center" />
+                <TextBlock Text="Click '+ Add Earphone' below to start streaming audio simultaneously to multiple Bluetooth headphones."
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           MaxWidth="260" />
+            </StackPanel>
+
+            <!-- Active Device Cards -->
+            <ListView ItemsSource="{x:Bind ViewModel.Devices}"
+                      SelectionMode="None"
+                      Visibility="{x:Bind ViewModel.HasDevices, Mode=OneWay}">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Margin" Value="0,0,0,10" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DeviceItemViewModel">
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12">
+                            <Grid RowSpacing="10">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <!-- Card Header: Status Dot, Name, Remove Button -->
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Status dot -->
+                                    <Ellipse Width="8" Height="8"
+                                             Fill="{x:Bind StatusBrush, Mode=OneWay}"
+                                             VerticalAlignment="Center"
+                                             Margin="0,0,8,0" />
+
+                                    <!-- Device Name & Status -->
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind FriendlyName}"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="13"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{x:Bind StatusText, Mode=OneWay}"
+                                                   FontSize="11"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+
+                                    <!-- Remove Button -->
+                                    <Button Grid.Column="2"
+                                            Click="OnRemoveDeviceClick"
+                                            DataContext="{x:Bind}"
+                                            Padding="6,4"
+                                            Background="Transparent"
+                                            BorderThickness="0">
+                                        <FontIcon Glyph="&#xE711;" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </Button>
+                                </Grid>
+
+                                <!-- Codec Selector & Delay Badges -->
+                                <Grid Grid.Row="1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <ComboBox ItemsSource="{x:Bind AvailableCodecs}"
+                                              SelectedItem="{x:Bind SelectedCodec, Mode=TwoWay}"
+                                              HorizontalAlignment="Left"
+                                              FontSize="11"
+                                              Padding="8,3"
+                                              MinHeight="26">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" FontSize="11" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+
+                                    <Border Grid.Column="1"
+                                            Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                            CornerRadius="4"
+                                            Padding="6,2"
+                                            VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind TotalDelayText, Mode=OneWay}"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                                    </Border>
+                                </Grid>
+
+                                <!-- Volume Slider -->
+                                <Grid Grid.Row="2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="38" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <FontIcon Glyph="&#xE767;" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <Slider Grid.Column="1"
+                                            Minimum="0" Maximum="150"
+                                            Value="{x:Bind VolumePercent, Mode=TwoWay}"
+                                            VerticalAlignment="Center"
+                                            Margin="0" />
+                                    <TextBlock Grid.Column="2"
+                                               Text="{x:Bind VolumeText, Mode=OneWay}"
+                                               FontSize="11"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Center" />
+                                </Grid>
+
+                                <!-- Latency Fine-Trim -->
+                                <Grid Grid.Row="3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="48" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Text="Trim:" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                    <Slider Grid.Column="1"
+                                            Minimum="-100" Maximum="100"
+                                            StepFrequency="5"
+                                            Value="{x:Bind ManualTrimMs, Mode=TwoWay}"
+                                            VerticalAlignment="Center"
+                                            Margin="0" />
+                                    <TextBlock Grid.Column="2"
+                                               Text="{x:Bind ManualTrimText, Mode=OneWay}"
+                                               FontSize="11"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Center" />
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Grid>
+
+        <!-- Footer -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Add Earphone Button with Dropdown Flyout -->
+            <Button Grid.Column="0" HorizontalAlignment="Stretch" Style="{ThemeResource AccentButtonStyle}">
+                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE710;" FontSize="13" />
+                    <TextBlock Text="Add Earphone" FontSize="13" FontWeight="SemiBold" />
+                </StackPanel>
+
+                <Button.Flyout>
+                    <Flyout Placement="Top">
+                        <StackPanel Width="280" Spacing="8">
+                            <TextBlock Text="Select Bluetooth Earphone" FontWeight="SemiBold" FontSize="14" />
+                            <TextBlock Text="Choose an active audio device to add to the synchronized stream:" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+
+                            <ListView ItemsSource="{x:Bind ViewModel.AvailableDevices}"
+                                      SelectionMode="None"
+                                      MaxHeight="220">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="naudio:MMDevice">
+                                        <Grid Padding="0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{x:Bind FriendlyName}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                            <Button Grid.Column="1"
+                                                    Content="Add"
+                                                    FontSize="11"
+                                                    Padding="10,3"
+                                                    Click="OnAddAvailableDeviceClick"
+                                                    DataContext="{x:Bind}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </StackPanel>
+                    </Flyout>
+                </Button.Flyout>
+            </Button>
+
+            <!-- Quick Settings / Info Button -->
+            <Button Grid.Column="1" Margin="8,0,0,0" Padding="8,6">
+                <FontIcon Glyph="&#xE713;" FontSize="14" />
+                <Button.Flyout>
+                    <Flyout Placement="Top">
+                        <StackPanel Width="240" Spacing="10">
+                            <TextBlock Text="MultiEar Settings" FontWeight="SemiBold" FontSize="14" />
+                            <TextBlock Text="Latency Auto-Synchronization: Active" FontSize="12" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                            <TextBlock Text="Hardware Clock Drift Protection: Enabled" FontSize="12" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                            <MenuFlyoutSeparator />
+                            <TextBlock Text="Version 1.0.0" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </Flyout>
+                </Button.Flyout>
+            </Button>
+        </Grid>
+    </Grid>
+</Page>

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "MultiEar.App (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "MultiEar.App (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
